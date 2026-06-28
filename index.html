@@ -1,0 +1,274 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Savitri Tradex — Invoice Generator</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<!-- ============== APP (hidden on print) ============== -->
+<div id="app">
+
+  <header class="app-header">
+    <div class="brand">
+      <span class="brand-mark">ST</span>
+      <div>
+        <h1>Invoice Generator</h1>
+        <p class="brand-sub">Savitri Tradex LLP</p>
+      </div>
+    </div>
+  </header>
+
+  <main class="layout">
+
+    <!-- ---------- LEFT: FORM ---------- -->
+    <section class="panel form-panel">
+
+      <div class="card">
+        <h2 class="card-title">Customer</h2>
+        <div class="field-grid">
+          <label class="field">
+            <span>Customer name</span>
+            <input type="text" id="custName" placeholder="e.g. Vandana S. Traders" autocomplete="off">
+          </label>
+          <label class="field">
+            <span>Phone number</span>
+            <input type="tel" id="custPhone" placeholder="e.g. 9876543210" autocomplete="off">
+          </label>
+          <label class="field span-2">
+            <span>Billing address</span>
+            <input type="text" id="custAddress" placeholder="City, State / Country" autocomplete="off">
+          </label>
+        </div>
+
+        <div class="field-grid">
+          <label class="field span-2">
+            <span>Customer type</span>
+            <div class="seg-control" id="custTypeControl">
+              <button type="button" class="seg-btn active" data-type="same-state">Indian — Uttar Pradesh</button>
+              <button type="button" class="seg-btn" data-type="diff-state">Indian — Other state</button>
+              <button type="button" class="seg-btn" data-type="nepal">Nepal</button>
+            </div>
+          </label>
+        </div>
+
+        <div class="field-grid" id="nepalExtraFields" hidden>
+          <label class="field">
+            <span>Exim code</span>
+            <input type="text" id="eximCode" placeholder="e.g. 3029053220135NP" autocomplete="off">
+          </label>
+          <label class="field">
+            <span>Destination</span>
+            <input type="text" id="destination" value="Nepal" autocomplete="off">
+          </label>
+        </div>
+
+        <p class="tax-hint" id="taxHint"></p>
+      </div>
+
+      <div class="card">
+        <div class="card-title-row">
+          <h2 class="card-title">Items</h2>
+          <button type="button" class="btn btn-add" id="addItemBtn">+ Add item</button>
+        </div>
+
+        <div id="itemsList" class="items-list"><!-- item rows injected here --></div>
+      </div>
+
+      <div class="card">
+        <h2 class="card-title">Payment</h2>
+        <div class="field-grid">
+          <label class="field">
+            <span>Invoice no.</span>
+            <input type="text" id="invoiceNo" placeholder="e.g. 06/2026-2027" autocomplete="off">
+          </label>
+          <label class="field">
+            <span>Invoice date</span>
+            <input type="date" id="invoiceDate">
+          </label>
+          <label class="field">
+            <span>Payment mode</span>
+            <input type="text" id="paymentMode" value="100% Credit" autocomplete="off">
+          </label>
+          <label class="field">
+            <span>Amount received (₹)</span>
+            <input type="number" id="amountReceived" value="0" min="0" step="0.01">
+          </label>
+        </div>
+      </div>
+
+      <div class="sticky-actions">
+        <div class="totals-preview" id="totalsPreview"></div>
+        <button type="button" class="btn btn-primary" id="generateBtn">Generate invoice(s)</button>
+      </div>
+
+    </section>
+
+    <!-- ---------- RIGHT: PREVIEW ---------- -->
+    <section class="panel preview-panel">
+      <div class="preview-toolbar" id="previewToolbar" hidden>
+        <div class="tabs" id="previewTabs"></div>
+        <button type="button" class="btn btn-print" id="printBtn">Print / Save PDF</button>
+      </div>
+      <div class="preview-empty" id="previewEmpty">
+        <p>Fill in the customer and item details, then generate to preview the invoice here.</p>
+      </div>
+      <div id="invoiceRenders"><!-- generated invoice(s) injected here --></div>
+    </section>
+
+  </main>
+</div>
+
+<!-- Hidden template for a single item row -->
+<template id="itemRowTemplate">
+  <div class="item-row card-sub">
+    <button type="button" class="item-remove" title="Remove item">&times;</button>
+    <div class="field-grid item-grid">
+      <label class="field span-2">
+        <span>Description</span>
+        <input type="text" class="it-desc" placeholder="e.g. Polyester Yarn 8 Bleach" autocomplete="off">
+      </label>
+      <label class="field">
+        <span>HSN code</span>
+        <input type="text" class="it-hsn" placeholder="5509" autocomplete="off">
+      </label>
+      <label class="field">
+        <span>GST rate (%)</span>
+        <input type="number" class="it-gst" placeholder="5" min="0" step="0.01">
+      </label>
+      <label class="field">
+        <span>Qty</span>
+        <input type="number" class="it-qty" placeholder="100" min="0" step="0.001">
+      </label>
+      <label class="field">
+        <span>Unit</span>
+        <input type="text" class="it-unit" placeholder="KGS" autocomplete="off">
+      </label>
+      <label class="field">
+        <span>Rate / unit (₹)</span>
+        <input type="number" class="it-rate" placeholder="162" min="0" step="0.01">
+      </label>
+      <div class="field item-amount-display">
+        <span>Amount (₹)</span>
+        <output class="it-amount">0.00</output>
+      </div>
+    </div>
+  </div>
+</template>
+
+<!-- Hidden template for a full printable invoice -->
+<template id="invoiceTemplate">
+  <div class="invoice-sheet">
+    <table class="invoice-table">
+      <thead class="invoice-letterhead-head">
+        <tr><td colspan="6">
+          <div class="letterhead">
+            <p class="letterhead-tag">TAX INVOICE</p>
+            <p class="letterhead-om">OM GANESHAY NAMAH</p>
+            <p class="letterhead-supply supply-line" hidden>(SUPPLY MEANT FOR EXPORT/SUPPLY TO SEZ UNIT OR SEZ DEVELOPER FOR AUTHORISED OPERATIONS ON PAYMENT OF IGST)</p>
+            <h2 class="letterhead-company">SAVITRI TRADEX LLP</h2>
+            <p class="letterhead-addr">E-4/697, VINAY KHAND<br>GOMTI NAGAR, LUCKNOW, UTTAR PRADESH-226010</p>
+            <p class="letterhead-gst">GSTIN:- 09AAZFR8801K2Z9, IEC:- AAZFR8801K, AD Code:- 02401R2-2000009</p>
+            <p class="letterhead-contact">Mob. No. +91-9559455761, +91-9984575385 &nbsp; Email:- admin@savitritradex.com</p>
+          </div>
+
+          <table class="meta-table">
+            <tr>
+              <td class="meta-cell meta-billto" rowspan="3">
+                <span class="meta-label">Bill To</span>
+                <span class="meta-strong cust-name"></span>
+                <span class="cust-address"></span>
+                <span class="cust-exim" hidden></span>
+              </td>
+              <td class="meta-cell"><span class="meta-label">Origin Country</span><span>India</span></td>
+              <td class="meta-cell meta-invno" rowspan="3">
+                <span class="meta-label">Invoice No.</span>
+                <span class="meta-strong inv-no"></span>
+              </td>
+            </tr>
+            <tr>
+              <td class="meta-cell"><span class="meta-label">Destination</span><span class="cust-destination">India</span></td>
+            </tr>
+            <tr>
+              <td class="meta-cell"><span class="meta-label">Date</span><span class="inv-date"></span></td>
+            </tr>
+          </table>
+        </td></tr>
+        <tr class="col-head-row">
+          <th class="col-sno">S.No</th>
+          <th class="col-desc">Description of Goods</th>
+          <th class="col-hsn">HSN Code</th>
+          <th class="col-qty">Qty</th>
+          <th class="col-unit">Unit</th>
+          <th class="col-rate">Rate</th>
+          <th class="col-amount">Amount (INR)</th>
+        </tr>
+      </thead>
+
+      <tbody class="invoice-body"><!-- item rows injected --></tbody>
+
+      <tfoot class="invoice-footfoot">
+        <tr><td colspan="7">
+          <table class="totals-block">
+            <tr class="subtotal-row">
+              <td class="totals-label">Sub Total</td>
+              <td class="totals-qty"></td>
+              <td class="totals-amount"></td>
+            </tr>
+            <tbody class="tax-rows"><!-- tax breakdown rows injected --></tbody>
+            <tr class="grand-total-row">
+              <td class="totals-label">Total</td>
+              <td></td>
+              <td class="totals-amount"></td>
+            </tr>
+            <tr class="payment-mode-row">
+              <td colspan="2">Payment Mode:- <span class="payment-mode-val"></span></td>
+              <td></td>
+            </tr>
+          </table>
+
+          <table class="bottom-grid">
+            <tr>
+              <td class="bottom-cell tax-summary-cell">
+                <p class="bottom-heading">Tax Summary</p>
+                <table class="tax-summary-table">
+                  <thead><tr><th>HSN/SAC</th><th>Taxable (INR)</th><th class="tax-cols"></th><th>Amount</th></tr></thead>
+                  <tbody class="tax-summary-rows"></tbody>
+                  <tfoot><tr class="tax-summary-total"><th>TOTAL</th><th class="ts-taxable"></th><th></th><th class="ts-tax"></th></tr></tfoot>
+                </table>
+              </td>
+              <td class="bottom-cell words-cell">
+                <p class="bottom-heading">Invoice Amount in Words (Rs):</p>
+                <p class="amount-words"></p>
+                <p class="bottom-heading received-heading">Received / Balance</p>
+                <table class="rb-table">
+                  <tr><td>Received</td><td class="received-val"></td></tr>
+                  <tr><td>Balance (Rs.)</td><td class="balance-val"></td></tr>
+                </table>
+              </td>
+            </tr>
+            <tr>
+              <td class="bottom-cell bank-cell" colspan="2">
+                <p class="bottom-heading">Bank Details</p>
+                <table class="bank-table">
+                  <tr><td>Name</td><td>CANARA BANK</td><td rowspan="4" class="sign-cell">For SAVITRI TRADEX LLP<br><br><br><span class="sign-line">Authorized Signatory</span></td></tr>
+                  <tr><td>Account No</td><td>120039868021</td></tr>
+                  <tr><td>IFSC</td><td>CNRB0018481</td></tr>
+                  <tr><td>Branch</td><td>LUCKNOW, VIRAM KHAND, GOMTI NAGAR</td></tr>
+                  <tr><td colspan="2">A/c Holder: SAVITRI TRADEX LLP</td></tr>
+                </table>
+              </td>
+            </tr>
+          </table>
+          <p class="thanks-note">Thanks for doing the business with us!</p>
+        </td></tr>
+      </tfoot>
+    </table>
+  </div>
+</template>
+
+<script src="app.js"></script>
+</body>
+</html>
