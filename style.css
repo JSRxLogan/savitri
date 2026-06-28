@@ -405,7 +405,16 @@ body{
    ============================================================ */
 @media print{
   body{ background:#fff; }
-  #app{ display:none !important; }
+
+  /* Hide all interactive app chrome, but #invoiceRenders lives inside #app's DOM tree,
+     so we hide specific chrome elements rather than #app itself. */
+  .app-header{ display:none !important; }
+  .layout{ display:block !important; padding:0 !important; }
+  .form-panel{ display:none !important; }
+  .preview-toolbar{ display:none !important; }
+  .preview-empty{ display:none !important; }
+  .preview-panel{ padding:0 !important; }
+
   #invoiceRenders{ display:block !important; gap:0; }
   .invoice-sheet{
     display:block !important;

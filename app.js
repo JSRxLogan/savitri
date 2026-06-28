@@ -68,6 +68,10 @@ function qtyFmt(n) {
 const itemsListEl = document.getElementById("itemsList");
 const itemRowTemplate = document.getElementById("itemRowTemplate");
 
+// Remembers the most recently entered unit/GST rate so new rows can start pre-filled with them.
+let lastUsedUnit = "";
+let lastUsedGstRate = "";
+
 function addItemRow(prefill) {
   const node = itemRowTemplate.content.firstElementChild.cloneNode(true);
   itemsListEl.appendChild(node);
@@ -79,12 +83,22 @@ function addItemRow(prefill) {
     node.querySelector(".it-qty").value = prefill.qty ?? "";
     node.querySelector(".it-unit").value = prefill.unit || "";
     node.querySelector(".it-rate").value = prefill.rate ?? "";
+  } else {
+    // Pre-fill unit/GST from the last row the user touched, so repetitive entry is faster.
+    // These are just starting values — still fully editable per row.
+    if (lastUsedUnit) node.querySelector(".it-unit").value = lastUsedUnit;
+    if (lastUsedGstRate !== "") node.querySelector(".it-gst").value = lastUsedGstRate;
   }
 
   node.querySelector(".item-remove").addEventListener("click", () => {
     node.remove();
     syncTotalsPreview();
   });
+
+  const unitInput = node.querySelector(".it-unit");
+  const gstInput = node.querySelector(".it-gst");
+  unitInput.addEventListener("change", () => { lastUsedUnit = unitInput.value.trim(); });
+  gstInput.addEventListener("change", () => { lastUsedGstRate = gstInput.value; });
 
   node.querySelectorAll("input").forEach(inp => {
     inp.addEventListener("input", () => {
@@ -359,7 +373,7 @@ generateBtn.addEventListener("click", () => {
     custPhone: document.getElementById("custPhone").value.trim(),
     custAddress: document.getElementById("custAddress").value.trim(),
     eximCode: customerType === "nepal" ? document.getElementById("eximCode").value.trim() : "",
-    destination: customerType === "nepal" ? (document.getElementById("destination").value.trim() || "Nepal") : "India",
+    destination: customerType === "nepal" ? document.getElementById("destination").value.trim() : "India",
     invoiceNo: document.getElementById("invoiceNo").value.trim(),
     paymentMode: document.getElementById("paymentMode").value.trim(),
     amountReceived: document.getElementById("amountReceived").value,
